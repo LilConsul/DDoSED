@@ -3,7 +3,11 @@ repos:
     rev: v0.5.5
     hooks:
       - id: ruff
-        name: ruff check (lint)
+        name: ruff check (lint + import sort)
         args: [--fix]
       - id: ruff-format
         name: ruff format
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.22
+    hooks:
+      - id: mdformat
