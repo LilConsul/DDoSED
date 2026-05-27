@@ -1,0 +1,55 @@
+[project]
+name = "DDoSED"
+version = "0.1.0"
+description = "DDoS Educational Detector"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name="Denys Shevchenko" },
+    { name="Yehor Karabanov" },
+    { name="Ihor Tymkiv" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5.5",
+    "pre-commit>=3.7.0",
+]
+
+
+[tool.ruff]
+target-version = "py313"
+# https://docs.astral.sh/ruff/rules/
+lint.select = [
+    "ANN",  # type annotations
+    "A",  # prevent using keywords that clobber python builtins
+    "B",  # bugbear: security warnings
+    "E", # default, pycodestyle - Errors
+    "F", # default, pyflakes
+    "FAST", # FastAPI
+    "UP", # pyupgrade, upgrade syntax for newer versions of the language.
+    "PL", # Pylint rules
+    "I", # isort
+    "ISC", # flake8-implicit-str-concat
+    "G", # flake8-logging-format
+    "INP", # Add an __init__.py
+    "W", # pycodestyle - Warnings
+    "N", # naming
+    "C4", # flake8-comprehensions - almost all auto-fix
+    "RET", # flake8-return - consistency or return statements
+    "RUF",  # the ruff developer's own rules
+    "LOG", # flake8-logging - issues using the standard library logging module
+    "SIM", # simplify
+    "TID", # flake8-tidy-imports - disallow importing specific modules
+    "C90" # code complexity
+]
+lint.ignore = [
+    "ANN002",  # require type annotation on *args
+    "ANN003",  # require type annotation on **kwargs
+    "E501", # line too long, complains on long comment lines/strings, anyway we have black for it
+    "PLC0415", # `import` should be at the top-level of a file
+    "RET504" # Unnecessary assignment to {name} before return statement
+]
+lint.preview = true
+lint.explicit-preview-rules = true
