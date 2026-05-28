@@ -6,8 +6,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 
+from src.artifacts import save_json_report, save_model_artifact
 from src.evaluate import summarize_classification_metrics
 from src.features import build_feature_transformer
+from src.paths import ARTIFACTS_ROOT, REPORTS_ROOT
 from src.schema import TARGET_COLUMN
 
 
@@ -62,3 +64,8 @@ def train_and_compare_models(frame, feature_set: str) -> dict[str, object]:
         "best_model_name": ranked_models[0]["model_name"],
         "ranked_models": ranked_models,
     }
+
+
+def save_training_outputs(best_pipeline: object, comparison: dict[str, object]) -> None:
+    save_model_artifact(ARTIFACTS_ROOT / "best_model.joblib", best_pipeline)
+    save_json_report(REPORTS_ROOT / "model_comparison.json", comparison)
