@@ -10,7 +10,10 @@ authors = [
     { name="Ihor Tymkiv" }
 ]
 dependencies = [
+    "joblib>=1.5.3",
     "pandas>=3.0.3",
+    "scikit-learn>=1.8.0",
+    "streamlit>=1.57.0",
 ]
 
 [project.optional-dependencies]

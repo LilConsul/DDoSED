@@ -1,17 +1,67 @@
+import logging
+import subprocess
 from pathlib import Path
+
 import pandas as pd
-from paths import DATASET_PATH
+
+from src.paths import DATASET_PATH, PROJECT_ROOT
+from src.schema import validate_required_columns
+
+logger = logging.getLogger(__name__)
+
+KAGGLE_DATASET_URL = (
+    "https://www.kaggle.com/api/v1/datasets/download/datasetengineer/inddos24-dataset"
+)
 
 
-def load_dataset(path: Path) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    return df
+def download_dataset(path: Path) -> None:
+    relative_path = path.relative_to(PROJECT_ROOT)
+    logger.info("Dataset not found at %s", relative_path)
+    logger.info("Downloading from Kaggle...")
+
+    try:
+        result = subprocess.run(
+            ["curl", "-L", "-o", str(path), KAGGLE_DATASET_URL],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            logger.info("Dataset downloaded successfully to %s", relative_path)
+        else:
+            logger.error("Download failed with return code %d", result.returncode)
+            raise RuntimeError(f"Download failed: {result.stderr}")
+    except subprocess.CalledProcessError as e:
+        logger.error("Error downloading dataset: %s", e.stderr)
+        raise RuntimeError(f"Failed to download dataset: {e.stderr}") from e
+    except FileNotFoundError as e:
+        logger.error("curl command not found. Please install curl.")
+        raise RuntimeError(
+            "curl is required for downloading. Please install curl."
+        ) from e
+
+
+def load_dataset(path: Path, auto_download: bool = True) -> pd.DataFrame:
+    if not path.exists():
+        if auto_download:
+            download_dataset(path)
+        else:
+            relative_path = path.relative_to(PROJECT_ROOT)
+            raise FileNotFoundError(
+                f"Dataset not found at {relative_path}. Set auto_download=True to download automatically."
+            )
+
+    relative_path = path.relative_to(PROJECT_ROOT)
+    logger.info("Loading dataset from %s", relative_path)
+    frame = pd.read_csv(path)
+    validate_required_columns(frame.columns)
+    logger.info("Dataset loaded successfully: %d rows, %d columns", len(frame), len(frame.columns))
+    return frame
 
 
 if __name__ == "__main__":
-    df = load_dataset(DATASET_PATH)
-    print(df.head())
-    print(df.shape)
-    print(df.dtypes)
-
-    print(df["Attack Type"].value_counts())
+    dataset = load_dataset(DATASET_PATH)
+    print(dataset.head())
+    print(dataset.shape)
+    print(dataset.dtypes)
+    print(dataset["Attack Type"].value_counts())
