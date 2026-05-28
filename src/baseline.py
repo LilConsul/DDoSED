@@ -1,5 +1,9 @@
 import pandas as pd
 
+THRESHOLD_PACKET_RATE = 3000
+THRESHOLD_PACKETS_IN_FLOW = 2000
+THRESHOLD_UNIQUE_SOURCE_COUNT = 100
+
 
 def predict_rule_based(frame: pd.DataFrame) -> pd.Series:
     predictions: list[str] = []
@@ -12,16 +16,16 @@ def predict_rule_based(frame: pd.DataFrame) -> pd.Series:
 
         if (
             protocol == "TCP"
-            and packet_rate >= 3000
-            and packets_in_flow >= 2000
-            and unique_source_count >= 100
+            and packet_rate >= THRESHOLD_PACKET_RATE
+            and packets_in_flow >= THRESHOLD_PACKETS_IN_FLOW
+            and unique_source_count >= THRESHOLD_UNIQUE_SOURCE_COUNT
         ):
             predictions.append("syn_flood")
         elif (
             protocol == "UDP"
-            and packet_rate >= 3000
-            and packets_in_flow >= 2000
-            and unique_source_count >= 100
+            and packet_rate >= THRESHOLD_PACKET_RATE
+            and packets_in_flow >= THRESHOLD_PACKETS_IN_FLOW
+            and unique_source_count >= THRESHOLD_UNIQUE_SOURCE_COUNT
         ):
             predictions.append("udp_flood")
         else:
