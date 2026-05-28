@@ -9,7 +9,9 @@ authors = [
     { name="Yehor Karabanov" },
     { name="Ihor Tymkiv" }
 ]
-dependencies = []
+dependencies = [
+    "pandas>=3.0.3",
+]
 
 [project.optional-dependencies]
 dev = [
