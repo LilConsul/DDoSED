@@ -24,7 +24,7 @@ def build_model_registry() -> dict[str, object]:
             max_depth=10,
         ),
         "naive_bayes": GaussianNB(),
-        "knn": KNeighborsClassifier(n_neighbors=5),
+        "knn": KNeighborsClassifier(n_neighbors=3),
     }
 
 

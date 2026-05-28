@@ -17,7 +17,7 @@ uv sync --extra dev
 ### Inspect available models
 
 ```bash
-uv run python -m src.main
+uv run python src/main.py
 ```
 
 ### Run training module
