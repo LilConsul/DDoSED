@@ -1,13 +1,15 @@
 import pandas as pd
 
+from src.schema import (
+    PACKETS_IN_FLOW_COLUMN,
+    PROTOCOL_COLUMN,
+    RATE_OF_PACKETS_COLUMN,
+    UNIQUE_SOURCE_COUNT_COLUMN,
+)
+
 THRESHOLD_PACKET_RATE = 3000
 THRESHOLD_PACKETS_IN_FLOW = 2000
 THRESHOLD_UNIQUE_SOURCE_COUNT = 100
-
-PROTOCOL_COLUMN = "Protocol"
-RATE_OF_PACKETS_COLUMN = "Rate of Packets"
-PACKETS_IN_FLOW_COLUMN = "Packets in Flow"
-UNIQUE_SOURCE_COUNT_COLUMN = "Unique Source Count"
 
 
 def predict_rule_based(frame: pd.DataFrame) -> pd.Series:
