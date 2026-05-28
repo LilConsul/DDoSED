@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.paths import DATASET_PATH
+from src.paths import DATASET_PATH, PROJECT_ROOT
 from src.schema import validate_required_columns
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,8 @@ KAGGLE_DATASET_URL = (
 
 
 def download_dataset(path: Path) -> None:
-    logger.info("Dataset not found at %s", path)
+    relative_path = path.relative_to(PROJECT_ROOT)
+    logger.info("Dataset not found at %s", relative_path)
     logger.info("Downloading from Kaggle...")
 
     try:
@@ -26,7 +27,7 @@ def download_dataset(path: Path) -> None:
             text=True,
         )
         if result.returncode == 0:
-            logger.info("Dataset downloaded successfully to %s", path)
+            logger.info("Dataset downloaded successfully to %s", relative_path)
         else:
             logger.error("Download failed with return code %d", result.returncode)
             raise RuntimeError(f"Download failed: {result.stderr}")
@@ -45,11 +46,13 @@ def load_dataset(path: Path, auto_download: bool = True) -> pd.DataFrame:
         if auto_download:
             download_dataset(path)
         else:
+            relative_path = path.relative_to(PROJECT_ROOT)
             raise FileNotFoundError(
-                f"Dataset not found at {path}. Set auto_download=True to download automatically."
+                f"Dataset not found at {relative_path}. Set auto_download=True to download automatically."
             )
 
-    logger.info("Loading dataset from %s", path)
+    relative_path = path.relative_to(PROJECT_ROOT)
+    logger.info("Loading dataset from %s", relative_path)
     frame = pd.read_csv(path)
     validate_required_columns(frame.columns)
     logger.info("Dataset loaded successfully: %d rows, %d columns", len(frame), len(frame.columns))

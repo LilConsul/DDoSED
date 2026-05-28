@@ -2,7 +2,7 @@ import logging
 
 from src.baseline import predict_rule_based
 from src.load_dataset import load_dataset
-from src.paths import DATASET_PATH
+from src.paths import DATASET_PATH, PROJECT_ROOT
 from src.preprocessing import prepare_model_frame
 
 logging.basicConfig(
@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     logger.info("Starting DDoS detection pipeline")
 
-    logger.info("Loading dataset from %s", DATASET_PATH)
+    relative_path = DATASET_PATH.relative_to(PROJECT_ROOT)
+    logger.info("Loading dataset from %s", relative_path)
     dataset = load_dataset(DATASET_PATH)
     logger.info("Dataset loaded: %d rows, %d columns", len(dataset), len(dataset.columns))
 
