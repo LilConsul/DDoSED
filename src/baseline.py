@@ -4,31 +4,30 @@ THRESHOLD_PACKET_RATE = 3000
 THRESHOLD_PACKETS_IN_FLOW = 2000
 THRESHOLD_UNIQUE_SOURCE_COUNT = 100
 
+PROTOCOL_COLUMN = "Protocol"
+RATE_OF_PACKETS_COLUMN = "Rate of Packets"
+PACKETS_IN_FLOW_COLUMN = "Packets in Flow"
+UNIQUE_SOURCE_COUNT_COLUMN = "Unique Source Count"
+
 
 def predict_rule_based(frame: pd.DataFrame) -> pd.Series:
-    predictions: list[str] = []
+    predictions = pd.Series("normal", index=frame.index)
 
-    for _, row in frame.iterrows():
-        protocol = row["Protocol"]
-        packet_rate = row["Rate of Packets"]
-        packets_in_flow = row["Packets in Flow"]
-        unique_source_count = row["Unique Source Count"]
+    tcp_attack_mask = (
+        (frame[PROTOCOL_COLUMN] == "TCP")
+        & (frame[RATE_OF_PACKETS_COLUMN] >= THRESHOLD_PACKET_RATE)
+        & (frame[PACKETS_IN_FLOW_COLUMN] >= THRESHOLD_PACKETS_IN_FLOW)
+        & (frame[UNIQUE_SOURCE_COUNT_COLUMN] >= THRESHOLD_UNIQUE_SOURCE_COUNT)
+    )
 
-        if (
-            protocol == "TCP"
-            and packet_rate >= THRESHOLD_PACKET_RATE
-            and packets_in_flow >= THRESHOLD_PACKETS_IN_FLOW
-            and unique_source_count >= THRESHOLD_UNIQUE_SOURCE_COUNT
-        ):
-            predictions.append("syn_flood")
-        elif (
-            protocol == "UDP"
-            and packet_rate >= THRESHOLD_PACKET_RATE
-            and packets_in_flow >= THRESHOLD_PACKETS_IN_FLOW
-            and unique_source_count >= THRESHOLD_UNIQUE_SOURCE_COUNT
-        ):
-            predictions.append("udp_flood")
-        else:
-            predictions.append("normal")
+    udp_attack_mask = (
+        (frame[PROTOCOL_COLUMN] == "UDP")
+        & (frame[RATE_OF_PACKETS_COLUMN] >= THRESHOLD_PACKET_RATE)
+        & (frame[PACKETS_IN_FLOW_COLUMN] >= THRESHOLD_PACKETS_IN_FLOW)
+        & (frame[UNIQUE_SOURCE_COUNT_COLUMN] >= THRESHOLD_UNIQUE_SOURCE_COUNT)
+    )
 
-    return pd.Series(predictions)
+    predictions[tcp_attack_mask] = "syn_flood"
+    predictions[udp_attack_mask] = "udp_flood"
+
+    return predictions
