@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -27,7 +28,7 @@ def build_model_registry() -> dict[str, object]:
     }
 
 
-def train_and_compare_models(frame, feature_set: str) -> dict[str, object]:
+def train_and_compare_models(frame: pd.DataFrame, feature_set: str) -> dict[str, object]:
     features = frame.drop(columns=[TARGET_COLUMN])
     target = frame[TARGET_COLUMN]
 
