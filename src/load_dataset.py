@@ -26,18 +26,6 @@ EXCLUDE_COLUMNS = [
     "Destination Port",
 ]
 
-PROTOCOL_ENCODING = {
-    "ICMP": 1,
-    "TCP": 2,
-    "UDP": 3,
-}
-
-ATTACK_TYPE_ENCODING = {
-    "No Attack": 1,
-    "UDP Flood": 2,
-    "SYN Flood": 3,
-}
-
 
 def download_dataset(path: Path) -> None:
     relative_path = path.relative_to(PROJECT_ROOT)
@@ -79,46 +67,21 @@ def load_dataset(path: Path, auto_download: bool = True) -> pd.DataFrame:
     relative_path = path.relative_to(PROJECT_ROOT)
     logger.info("Loading dataset from %s", relative_path)
     frame = pd.read_csv(path)
-    logger.info("Dataset loaded successfully: %d rows, %d columns", len(frame), len(frame.columns))
+    logger.info(
+        "Dataset loaded successfully: %d rows, %d columns",
+        len(frame),
+        len(frame.columns),
+    )
     return frame
 
 
-def preprocess_dataset(dataset: pd.DataFrame, exclude_columns: list[str] | None = None) -> pd.DataFrame:
+def preprocess_dataset(
+    dataset: pd.DataFrame, exclude_columns: list[str] | None = None
+) -> pd.DataFrame:
     columns_to_drop = EXCLUDE_COLUMNS if exclude_columns is None else exclude_columns
     dataset = dataset.drop(columns=columns_to_drop, errors="ignore")
 
-    if "Protocol" in dataset.columns:
-        unknown_protocols = sorted(set(dataset["Protocol"].dropna()) - set(PROTOCOL_ENCODING))
-        if unknown_protocols:
-            raise ValueError(f"Unknown Protocol values: {unknown_protocols}")
-        dataset["Protocol"] = dataset["Protocol"].map(PROTOCOL_ENCODING)
-
-    if "Attack Type" in dataset.columns:
-        unknown_attack_types = sorted(set(dataset["Attack Type"].dropna()) - set(ATTACK_TYPE_ENCODING))
-        if unknown_attack_types:
-            raise ValueError(f"Unknown Attack Type values: {unknown_attack_types}")
-        dataset["Attack Type"] = dataset["Attack Type"].map(ATTACK_TYPE_ENCODING)
-
     return dataset
-
-
-def build_exclude_columns(
-    include_ports: bool,
-    include_timestamp: bool,
-    include_ips: bool,
-) -> list[str]:
-    columns_to_drop = EXCLUDE_COLUMNS.copy()
-    if include_ports:
-        columns_to_drop = [
-            column for column in columns_to_drop if column not in {"Source Port", "Destination Port"}
-        ]
-    if include_timestamp:
-        columns_to_drop = [column for column in columns_to_drop if column != "Timestamp"]
-    if include_ips:
-        columns_to_drop = [
-            column for column in columns_to_drop if column not in {"Source IP", "Destination IP"}
-        ]
-    return columns_to_drop
 
 
 if __name__ == "__main__":
