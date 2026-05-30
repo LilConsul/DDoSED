@@ -8,18 +8,15 @@ from pathlib import Path
 import joblib
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge, SGDRegressor
 from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    f1_score,
-    precision_score,
-    recall_score,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.svm import LinearSVC
 
 from src.dataset_split import DatasetSplit, split_dataset
 from src.load_dataset import load_dataset, preprocess_dataset
@@ -35,9 +32,7 @@ def parse_args() -> argparse.Namespace:
         description="Train lightweight models for DDoS detection."
     )
     parser.add_argument("--max-window-size", type=int, default=500)
-    parser.add_argument("--step", type=int, default=5)
-    parser.add_argument("--binary-target", action="store_true")
-    parser.add_argument("--target-mode", type=str, default="majority")
+    parser.add_argument("--step", type=int, default=1)
     parser.add_argument("--sample-size", type=int, default=None)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--train-size", type=float, default=0.7)
@@ -61,27 +56,25 @@ def parse_args() -> argparse.Namespace:
 
 def build_models(random_state: int) -> dict[str, object]:
     return {
-        "log_reg": LogisticRegression(max_iter=2000),
-        "log_reg_bal": LogisticRegression(max_iter=2000, class_weight="balanced"),
-        "linear_svc": LinearSVC(),
-        "sgd_log": SGDClassifier(
-            loss="log_loss",
+        "lin_reg": LinearRegression(),
+        "ridge": Ridge(alpha=1.0, random_state=random_state),
+        "sgd_reg": SGDRegressor(
             max_iter=2000,
             random_state=random_state,
         ),
-        "rf": RandomForestClassifier(
-            n_estimators=200,
+        "rf": RandomForestRegressor(
+            n_estimators=300,
             random_state=random_state,
             n_jobs=-1,
         ),
-        "rf_depth10": RandomForestClassifier(
-            n_estimators=200,
+        "rf_depth10": RandomForestRegressor(
+            n_estimators=300,
             max_depth=10,
             random_state=random_state,
             n_jobs=-1,
         ),
-        "extra_trees": ExtraTreesClassifier(
-            n_estimators=300,
+        "extra_trees": ExtraTreesRegressor(
+            n_estimators=400,
             random_state=random_state,
             n_jobs=-1,
         ),
@@ -133,17 +126,12 @@ def evaluate_split(
     pipeline.fit(split.X_train, split.y_train)
     predictions = pipeline.predict(split.X_test)
 
+    mse = mean_squared_error(split.y_test, predictions)
+    rmse = float(mse) ** 0.5
     return {
-        "accuracy": accuracy_score(split.y_test, predictions),
-        "balanced_accuracy": balanced_accuracy_score(split.y_test, predictions),
-        "f1_macro": f1_score(split.y_test, predictions, average="macro"),
-        "f1_weighted": f1_score(split.y_test, predictions, average="weighted"),
-        "precision_macro": precision_score(
-            split.y_test, predictions, average="macro", zero_division=0
-        ),
-        "recall_macro": recall_score(
-            split.y_test, predictions, average="macro", zero_division=0
-        ),
+        "mae": mean_absolute_error(split.y_test, predictions),
+        "rmse": rmse,
+        "r2": r2_score(split.y_test, predictions),
     }
 
 
@@ -152,8 +140,6 @@ def train_for_window(
     window_size: int,
     *,
     schema: FeatureSchema,
-    target_mode: str,
-    binary_target: bool,
     random_state: int,
     train_size: float,
     val_size: float,
@@ -164,8 +150,6 @@ def train_for_window(
         frame,
         window_size,
         schema=schema,
-        target_mode=target_mode,
-        binary_target=binary_target,
     )
 
     if windowed.data.empty:
@@ -180,7 +164,7 @@ def train_for_window(
         test_size=test_size,
         random_state=random_state,
         shuffle=True,
-        stratify=True,
+        stratify=False,
     )
 
     results: list[dict[str, object]] = []
@@ -194,7 +178,6 @@ def train_for_window(
         result = {
             "window_size": window_size,
             "model": model_name,
-            "binary_target": binary_target,
             **metrics,
         }
         results.append(result)
@@ -242,8 +225,6 @@ def main() -> None:
                 processed,
                 window_size,
                 schema=schema,
-                target_mode=args.target_mode,
-                binary_target=args.binary_target,
                 random_state=args.random_state,
                 train_size=args.train_size,
                 val_size=args.val_size,
@@ -253,8 +234,7 @@ def main() -> None:
         )
 
     if results:
-        target_suffix = "binary" if args.binary_target else "multiclass"
-        report_path = REPORTS_ROOT / f"metrics_{target_suffix}.csv"
+        report_path = REPORTS_ROOT / "metrics_attack_score.csv"
         write_reports(results, report_path)
         logger.info("Saved reports to %s", report_path)
 
