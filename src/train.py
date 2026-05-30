@@ -8,7 +8,8 @@ from pathlib import Path
 import joblib
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -18,7 +19,7 @@ from sklearn.metrics import (
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
 
 from src.dataset_split import DatasetSplit, split_dataset
 from src.load_dataset import load_dataset, preprocess_dataset
@@ -31,9 +32,10 @@ logger = logging.getLogger(__name__)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train lightweight models for DDoS detection.")
-    parser.add_argument("--max-window-size", type=int, default=100)
-    parser.add_argument("--step", type=int, default=1)
+        description="Train lightweight models for DDoS detection."
+    )
+    parser.add_argument("--max-window-size", type=int, default=500)
+    parser.add_argument("--step", type=int, default=5)
     parser.add_argument("--binary-target", action="store_true")
     parser.add_argument("--target-mode", type=str, default="majority")
     parser.add_argument("--sample-size", type=int, default=None)
@@ -41,6 +43,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--train-size", type=float, default=0.7)
     parser.add_argument("--val-size", type=float, default=0.15)
     parser.add_argument("--test-size", type=float, default=0.15)
+    parser.add_argument(
+        "--models",
+        type=str,
+        default="all",
+        help="Comma-separated model keys (or 'all').",
+    )
     parser.add_argument(
         "--no-shuffle-before-windowing",
         action="store_false",
@@ -54,12 +62,41 @@ def parse_args() -> argparse.Namespace:
 def build_models(random_state: int) -> dict[str, object]:
     return {
         "log_reg": LogisticRegression(max_iter=2000),
+        "log_reg_bal": LogisticRegression(max_iter=2000, class_weight="balanced"),
+        "linear_svc": LinearSVC(),
+        "sgd_log": SGDClassifier(
+            loss="log_loss",
+            max_iter=2000,
+            random_state=random_state,
+        ),
         "rf": RandomForestClassifier(
             n_estimators=200,
             random_state=random_state,
             n_jobs=-1,
         ),
+        "rf_depth10": RandomForestClassifier(
+            n_estimators=200,
+            max_depth=10,
+            random_state=random_state,
+            n_jobs=-1,
+        ),
+        "extra_trees": ExtraTreesClassifier(
+            n_estimators=300,
+            random_state=random_state,
+            n_jobs=-1,
+        ),
     }
+
+
+def select_models(models: dict[str, object], selection: str) -> dict[str, object]:
+    if selection == "all":
+        return models
+    wanted = {name.strip() for name in selection.split(",") if name.strip()}
+    unknown = wanted - set(models)
+    if unknown:
+        unknown_list = ", ".join(sorted(unknown))
+        raise ValueError(f"Unknown model keys: {unknown_list}")
+    return {name: models[name] for name in wanted}
 
 
 def make_pipeline(
@@ -121,6 +158,7 @@ def train_for_window(
     train_size: float,
     val_size: float,
     test_size: float,
+    models: dict[str, object],
 ) -> list[dict[str, object]]:
     windowed = build_windowed_dataset(
         frame,
@@ -146,7 +184,7 @@ def train_for_window(
     )
 
     results: list[dict[str, object]] = []
-    for model_name, estimator in build_models(random_state).items():
+    for model_name, estimator in models.items():
         pipeline = make_pipeline(windowed, estimator)
         metrics = evaluate_split(split, pipeline)
 
@@ -183,15 +221,18 @@ def main() -> None:
         processed = processed.sample(n=args.sample_size, random_state=args.random_state)
 
     if args.shuffle_before_windowing:
-        processed = processed.sample(frac=1.0, random_state=args.random_state).reset_index(
-            drop=True
-        )
+        processed = processed.sample(
+            frac=1.0, random_state=args.random_state
+        ).reset_index(drop=True)
 
     schema = FeatureSchema(
         categorical=DEFAULT_SCHEMA.categorical,
         numerical=DEFAULT_SCHEMA.numerical,
         target=DEFAULT_SCHEMA.target,
     )
+
+    model_pool = build_models(args.random_state)
+    selected_models = select_models(model_pool, args.models)
 
     results: list[dict[str, object]] = []
     for window_size in range(1, args.max_window_size + 1, args.step):
@@ -207,6 +248,7 @@ def main() -> None:
                 train_size=args.train_size,
                 val_size=args.val_size,
                 test_size=args.test_size,
+                models=selected_models,
             )
         )
 
