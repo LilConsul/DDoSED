@@ -15,6 +15,14 @@ KAGGLE_DATASET_URL = (
 )
 
 
+SYN_UDP_MEMBERS = [
+    "Syn-training.parquet",
+    "Syn-testing.parquet",
+    "UDP-training.parquet",
+    "UDP-testing.parquet",
+]
+
+
 def download_dataset(path: Path) -> None:
     relative_path = path.relative_to(PROJECT_ROOT)
     logger.info("Dataset not found at %s", relative_path)
@@ -54,7 +62,9 @@ def _load_member_from_zip(archive: zipfile.ZipFile, member: str) -> pd.DataFrame
     raise ValueError(f"Unsupported file in ZIP: {member}")
 
 
-def _select_zip_members(archive: zipfile.ZipFile, requested: list[str] | None) -> list[str]:
+def _select_zip_members(
+    archive: zipfile.ZipFile, requested: list[str] | None
+) -> list[str]:
     members = [name for name in archive.namelist() if not name.endswith("/")]
     if requested:
         missing = [name for name in requested if name not in members]
@@ -68,9 +78,7 @@ def _select_zip_members(archive: zipfile.ZipFile, requested: list[str] | None) -
         return members
 
     data_members = [
-        name
-        for name in members
-        if name.lower().endswith((".parquet", ".csv"))
+        name for name in members if name.lower().endswith((".parquet", ".csv"))
     ]
     if not data_members:
         raise ValueError(f"No data files found in ZIP. Available: {members}")
@@ -115,4 +123,4 @@ def load_dataset(
 
 
 if __name__ == "__main__":
-    dataset = load_dataset(DATASET_PATH)
+    dataset = load_dataset(DATASET_PATH, zip_members=SYN_UDP_MEMBERS)
