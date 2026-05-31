@@ -8,6 +8,11 @@ Development dependencies (for pre-commit hooks, linters, etc.)
 uv sync --extra dev
 ```
 
+How to create models
+```bash
+uv run python -m src.train
+```
+
 
 ## What this adds
 
