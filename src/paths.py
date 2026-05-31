@@ -14,4 +14,5 @@ REPORTS_ROOT.mkdir(exist_ok=True, parents=True)
 MODELS_ROOT.mkdir(exist_ok=True, parents=True)
 # SAMPLE_DATA_ROOT.mkdir(exist_ok=True, parents=True)
 
-DATASET_PATH = DATA_ROOT / "inddos24-dataset.zip"
+DATASET_PATH = DATA_ROOT / "cicddos2019-dataset.zip"
+
