@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import time
 from pathlib import Path
 
 import joblib
@@ -123,15 +124,18 @@ def evaluate_split(
     split: DatasetSplit,
     pipeline: Pipeline,
 ) -> dict[str, float]:
+    start_time = time.perf_counter()
     pipeline.fit(split.X_train, split.y_train)
     predictions = pipeline.predict(split.X_test)
+    elapsed_seconds = time.perf_counter() - start_time
 
-    mse = mean_squared_error(split.y_test, predictions)
-    rmse = float(mse) ** 0.5
+    rmse = mean_squared_error(split.y_test, predictions) ** 0.5
+
     return {
         "mae": mean_absolute_error(split.y_test, predictions),
         "rmse": rmse,
         "r2": r2_score(split.y_test, predictions),
+        "avg_runtime_sec": elapsed_seconds,
     }
 
 

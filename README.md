@@ -38,6 +38,7 @@ Reports are written to `reports/` and trained models to `models/`.
 - MAE (Mean Absolute Error): Average absolute difference between prediction and true value. Lower is better. In your 1–10 score task, MAE 0.26 means predictions are off by ~0.26 points on average.
 - RMSE (Root Mean Squared Error): Like MAE but penalizes larger errors more. Lower is better.
 - R2 (Coefficient of Determination): How much variance in the target your model explains (vs. a simple baseline). Higher is better; 1.0 is perfect, 0.0 means no better than predicting the mean; negative is worse than the mean baseline.
+- Avg runtime (seconds): Average wall-clock time to fit and evaluate a model for a single window size.
 
 ## Best model from current run
 

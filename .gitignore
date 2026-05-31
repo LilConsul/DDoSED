@@ -140,3 +140,5 @@ cython_debug/
 
 # UV lock file
 uv.lock
+
+.bob
