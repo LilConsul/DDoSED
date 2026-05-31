@@ -123,18 +123,25 @@ def evaluate_split(
     split: DatasetSplit,
     pipeline: Pipeline,
 ) -> dict[str, float]:
-    start_time = time.perf_counter()
     pipeline.fit(split.X_train, split.y_train)
     predictions = pipeline.predict(split.X_test)
-    elapsed_seconds = time.perf_counter() - start_time
 
     rmse = mean_squared_error(split.y_test, predictions) ** 0.5
+
+    preprocess = pipeline.named_steps["preprocess"]
+    model = pipeline.named_steps["model"]
+    transformed_test = preprocess.transform(split.X_test)
+    single_window = transformed_test[:1]
+
+    single_start = time.perf_counter()
+    model.predict(single_window)
+    single_window_seconds = time.perf_counter() - single_start
 
     return {
         "mae": mean_absolute_error(split.y_test, predictions),
         "rmse": rmse,
         "r2": r2_score(split.y_test, predictions),
-        "avg_runtime_sec": elapsed_seconds,
+        "single_window_pred_sec": single_window_seconds,
     }
 
 

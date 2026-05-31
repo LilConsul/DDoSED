@@ -142,3 +142,5 @@ cython_debug/
 uv.lock
 
 .bob
+models
+reports
