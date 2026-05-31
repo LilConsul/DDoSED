@@ -37,8 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sample-size", type=int, default=None)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--train-size", type=float, default=0.7)
-    parser.add_argument("--val-size", type=float, default=0.15)
-    parser.add_argument("--test-size", type=float, default=0.15)
+    parser.add_argument("--test-size", type=float, default=0.3)
     parser.add_argument(
         "--models",
         type=str,
@@ -146,7 +145,6 @@ def train_for_window(
     schema: FeatureSchema,
     random_state: int,
     train_size: float,
-    val_size: float,
     test_size: float,
     models: dict[str, object],
 ) -> list[dict[str, object]]:
@@ -164,7 +162,6 @@ def train_for_window(
         windowed.data,
         target_column=schema.target,
         train_size=train_size,
-        val_size=val_size,
         test_size=test_size,
         random_state=random_state,
         shuffle=True,
@@ -231,7 +228,6 @@ def main() -> None:
                 schema=schema,
                 random_state=args.random_state,
                 train_size=args.train_size,
-                val_size=args.val_size,
                 test_size=args.test_size,
                 models=selected_models,
             )

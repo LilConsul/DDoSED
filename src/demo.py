@@ -47,8 +47,7 @@ def main() -> None:
         windowed.data,
         target_column=DEFAULT_SCHEMA.target,
         train_size=0.7,
-        val_size=0.15,
-        test_size=0.15,
+        test_size=0.3,
         random_state=42,
         shuffle=True,
         stratify=False,
@@ -56,7 +55,6 @@ def main() -> None:
 
     logger.info("Windowed rows: %d", len(windowed.data))
     logger.info("Train rows: %d", len(split.X_train))
-    logger.info("Validation rows: %d", len(split.X_val))
     logger.info("Test rows: %d", len(split.X_test))
 
 
