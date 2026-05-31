@@ -37,6 +37,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from xgboost import XGBClassifier
 
+from paths import REPORTS_ROOT
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 
@@ -234,9 +236,8 @@ def save_classification_reports(
     output_dir: Path,
 ) -> None:
     """Write per-class precision/recall/f1 for every model to a .txt file."""
-    path = output_dir / "classification_reports.txt"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as fh:
+    output_path = output_dir / "classification_reports.txt"
+    with open(output_path, "w", encoding="utf-8") as fh:
         fh.write("=" * 70 + "\n")
         fh.write("  CLASSIFICATION REPORTS — SYN / UDP DDoS Detection\n")
         fh.write("=" * 70 + "\n\n")
@@ -247,7 +248,7 @@ def save_classification_reports(
             fh.write(f"  {name}\n")
             fh.write(f"{'─' * 70}\n")
             fh.write(report + "\n\n")
-    logger.info("Saved → %s", path)
+    logger.info("Saved → %s", output_path)
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +262,7 @@ def build_report(
     y_test: np.ndarray,
     label_names: Sequence[str],
     models: dict | None = None,
-    output_dir: str | Path = "reports",
+    output_dir: str | Path = REPORTS_ROOT,
     cv_folds: int = 5,
 ) -> pd.DataFrame:
     """
@@ -400,6 +401,6 @@ if __name__ == "__main__":
     build_report(
         X_train_s, X_test_s, y_train, y_test,
         label_names=label_names,
-        output_dir="reports",
+        output_dir=REPORTS_ROOT,
         cv_folds=5,
     )

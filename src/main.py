@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 from evaluation import build_report
+from paths import REPORTS_ROOT
 
 # ---------------------------------------------------------------------------
 # Generate synthetic 3-class data mimicking Benign / Syn / UDP
@@ -46,8 +47,8 @@ print(f"Classes: Benign={np.sum(y_test==0)}  Syn={np.sum(y_test==1)}  UDP={np.su
 scores = build_report(
     X_train, X_test, y_train, y_test,
     label_names=["Benign", "Syn", "UDP"],
-    output_dir="reports",
+    output_dir=REPORTS_ROOT,
     cv_folds=3,  # keep low for quick test
 )
 
-print("\nDone. Check the reports/ directory for plots and classification_reports.txt")
+print(f"\nDone. Check {REPORTS_ROOT} for plots and classification_reports.txt")
