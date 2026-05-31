@@ -5,13 +5,26 @@ from pathlib import Path
 import pandas as pd
 
 from src.paths import DATASET_PATH, PROJECT_ROOT
-from src.schema import validate_required_columns
 
 logger = logging.getLogger(__name__)
 
 KAGGLE_DATASET_URL = (
     "https://www.kaggle.com/api/v1/datasets/download/datasetengineer/inddos24-dataset"
 )
+
+EXCLUDE_COLUMNS = [
+    "Labels",
+    "Firmware Version",
+    "Anomaly Score",
+    "Target Device",
+    "Operating System",
+    "Device Type",
+    "Timestamp",
+    "Source IP",
+    "Destination IP",
+    "Source Port",
+    "Destination Port",
+]
 
 
 def download_dataset(path: Path) -> None:
@@ -54,14 +67,23 @@ def load_dataset(path: Path, auto_download: bool = True) -> pd.DataFrame:
     relative_path = path.relative_to(PROJECT_ROOT)
     logger.info("Loading dataset from %s", relative_path)
     frame = pd.read_csv(path)
-    validate_required_columns(frame.columns)
-    logger.info("Dataset loaded successfully: %d rows, %d columns", len(frame), len(frame.columns))
+    logger.info(
+        "Dataset loaded successfully: %d rows, %d columns",
+        len(frame),
+        len(frame.columns),
+    )
     return frame
+
+
+def preprocess_dataset(
+    dataset: pd.DataFrame, exclude_columns: list[str] | None = None
+) -> pd.DataFrame:
+    columns_to_drop = EXCLUDE_COLUMNS if exclude_columns is None else exclude_columns
+    dataset = dataset.drop(columns=columns_to_drop, errors="ignore")
+
+    return dataset
 
 
 if __name__ == "__main__":
     dataset = load_dataset(DATASET_PATH)
-    print(dataset.head())
-    print(dataset.shape)
-    print(dataset.dtypes)
-    print(dataset["Attack Type"].value_counts())
+    processed_dataset = preprocess_dataset(dataset)
