@@ -25,7 +25,18 @@ with zipfile.ZipFile(DATASET_PATH) as archive:
 train_df = pd.concat(train_frames, ignore_index=True)
 test_df = pd.concat(test_frames, ignore_index=True)
 
-# --- Filter labels (keep only Syn, UDP, Benign) ---
+# --- Add this BEFORE the KEEP_LABELS filtering step ---
+LABEL_MAP = {
+    "DrDoS_UDP": "UDP",
+    "UDP-lag": "UDP",
+    "UDPLag": "UDP",
+    "BENIGN": "Benign",
+    "DrDoS_Syn": "Syn",
+}
+train_df["Label"] = train_df["Label"].replace(LABEL_MAP)
+test_df["Label"] = test_df["Label"].replace(LABEL_MAP)
+
+# Now the filter will work correctly:
 KEEP_LABELS = {"Syn", "UDP", "Benign"}
 train_df = train_df[train_df["Label"].isin(KEEP_LABELS)].reset_index(drop=True)
 test_df = test_df[test_df["Label"].isin(KEEP_LABELS)].reset_index(drop=True)
@@ -63,12 +74,10 @@ X_train = train_df.drop(columns=["Label"])
 X_test = test_df.drop(columns=["Label"])
 
 # Train/val split from training set
-from sklearn.model_selection import train_test_split
-
-X_train, X_val, y_train, y_val = train_test_split(
-    X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
-)
-
+X_train = train_df.drop(columns=["Label"])
+y_train = le.transform(train_df["Label"])
+X_val = test_df.drop(columns=["Label"])
+y_val = le.transform(test_df["Label"])
 # --- Scale ---
 scaler = MinMaxScaler()
 X_train = scaler.fit_transform(X_train)
