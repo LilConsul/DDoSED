@@ -753,7 +753,7 @@ with demo_col:
     feat_df = pd.DataFrame(
         {
             "Feature": feature_names[:15],
-            "Value": [f"{v:.4f}" for v in sample[:15]],
+            "Value": [f"{v:.10f}" for v in sample[:15]],
         }
     )
     st.dataframe(feat_df, use_container_width=True, height=350)
