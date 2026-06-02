@@ -445,7 +445,7 @@ st.markdown(
 # ─── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### ⚙️ Config")
-    cv_folds = st.slider("CV Folds", 2, 10, 3)
+    cv_folds = st.slider("CV Folds", 2, 10, 5)
     selected_models = st.multiselect(
         "Models to compare",
         ["Random Forest", "KNN", "Extra Trees", "MLP", "XGBoost"],
