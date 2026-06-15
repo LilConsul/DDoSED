@@ -1,37 +1,28 @@
+"""
+load_dataset.py — Handles downloading and extracting the CICDDoS2019 dataset.
+"""
+
 import logging
 import subprocess
+import zipfile
+from io import BytesIO
 from pathlib import Path
-
 import pandas as pd
-
-from src.paths import DATASET_PATH, PROJECT_ROOT
+from paths import DATASET_PATH, PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 
 KAGGLE_DATASET_URL = (
-    "https://www.kaggle.com/api/v1/datasets/download/datasetengineer/inddos24-dataset"
+    "https://www.kaggle.com/api/v1/datasets/download/dhoogla/cicddos2019"
 )
-
-EXCLUDE_COLUMNS = [
-    "Labels",
-    "Firmware Version",
-    "Anomaly Score",
-    "Target Device",
-    "Operating System",
-    "Device Type",
-    "Timestamp",
-    "Source IP",
-    "Destination IP",
-    "Source Port",
-    "Destination Port",
-]
 
 
 def download_dataset(path: Path) -> None:
-    relative_path = path.relative_to(PROJECT_ROOT)
+    relative_path = (
+        path.relative_to(PROJECT_ROOT) if PROJECT_ROOT in path.parents else path
+    )
     logger.info("Dataset not found at %s", relative_path)
     logger.info("Downloading from Kaggle...")
-
     try:
         result = subprocess.run(
             ["curl", "-L", "-o", str(path), KAGGLE_DATASET_URL],
@@ -40,50 +31,59 @@ def download_dataset(path: Path) -> None:
             text=True,
         )
         if result.returncode == 0:
-            logger.info("Dataset downloaded successfully to %s", relative_path)
+            logger.info("Dataset downloaded successfully.")
         else:
-            logger.error("Download failed with return code %d", result.returncode)
             raise RuntimeError(f"Download failed: {result.stderr}")
     except subprocess.CalledProcessError as e:
-        logger.error("Error downloading dataset: %s", e.stderr)
         raise RuntimeError(f"Failed to download dataset: {e.stderr}") from e
-    except FileNotFoundError as e:
-        logger.error("curl command not found. Please install curl.")
-        raise RuntimeError(
-            "curl is required for downloading. Please install curl."
-        ) from e
+    except FileNotFoundError:
+        raise RuntimeError("curl is required for downloading. Please install curl.")
 
 
-def load_dataset(path: Path, auto_download: bool = True) -> pd.DataFrame:
+def load_syn_udp_split(
+    path: Path = DATASET_PATH, auto_download: bool = True
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Loads the specific SYN/UDP train and test parquet files from the ZIP.
+    Returns: (train_df, test_df)
+    """
     if not path.exists():
         if auto_download:
             download_dataset(path)
         else:
-            relative_path = path.relative_to(PROJECT_ROOT)
-            raise FileNotFoundError(
-                f"Dataset not found at {relative_path}. Set auto_download=True to download automatically."
-            )
+            raise FileNotFoundError(f"Dataset not found at {path}")
 
-    relative_path = path.relative_to(PROJECT_ROOT)
-    logger.info("Loading dataset from %s", relative_path)
-    frame = pd.read_csv(path)
+    train_members = ["Syn-training.parquet", "UDP-training.parquet"]
+    test_members = ["Syn-testing.parquet", "UDP-testing.parquet"]
+
+    train_frames, test_frames = [], []
+
+    logger.info("Extracting train/test split from %s", path.name)
+    with zipfile.ZipFile(path) as archive:
+        available = archive.namelist()
+        for m in train_members:
+            if m not in available:
+                raise FileNotFoundError(f"{m} missing from ZIP")
+            with archive.open(m) as f:
+                train_frames.append(pd.read_parquet(BytesIO(f.read())))
+
+        for m in test_members:
+            if m not in available:
+                raise FileNotFoundError(f"{m} missing from ZIP")
+            with archive.open(m) as f:
+                test_frames.append(pd.read_parquet(BytesIO(f.read())))
+
+    train_df = pd.concat(train_frames, ignore_index=True)
+    test_df = pd.concat(test_frames, ignore_index=True)
+
     logger.info(
-        "Dataset loaded successfully: %d rows, %d columns",
-        len(frame),
-        len(frame.columns),
+        "Loaded native split: Train=%d rows, Test=%d rows", len(train_df), len(test_df)
     )
-    return frame
-
-
-def preprocess_dataset(
-    dataset: pd.DataFrame, exclude_columns: list[str] | None = None
-) -> pd.DataFrame:
-    columns_to_drop = EXCLUDE_COLUMNS if exclude_columns is None else exclude_columns
-    dataset = dataset.drop(columns=columns_to_drop, errors="ignore")
-
-    return dataset
+    return train_df, test_df
 
 
 if __name__ == "__main__":
-    dataset = load_dataset(DATASET_PATH)
-    processed_dataset = preprocess_dataset(dataset)
+    logging.basicConfig(level=logging.INFO)
+    tr, te = load_syn_udp_split()
+    print(f"Train labels: {tr['Label'].unique()}")
+    print(f"Test labels: {te['Label'].unique()}")
